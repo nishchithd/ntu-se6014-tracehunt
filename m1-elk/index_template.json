@@ -1,5 +1,5 @@
 {
-  "index_patterns": ["tracehunt-*"],
+  "index_patterns": ["tracehunt-*", "windows-security-*", "sysmon-*", "zeek-*"],
   "template": {
     "settings": {
       "number_of_shards": 1,
@@ -8,7 +8,11 @@
     "mappings": {
       "properties": {
         "@timestamp": { "type": "date" },
-        "host": { "type": "keyword" },
+        "host": {
+          "properties": {
+            "name": { "type": "keyword" }
+          }
+        },
         "event_type": { "type": "keyword" },
         "source_ip": { "type": "ip" },
         "destination_ip": { "type": "ip" },
