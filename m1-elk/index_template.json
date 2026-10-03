@@ -1,0 +1,20 @@
+{
+  "index_patterns": ["tracehunt-*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "mappings": {
+      "properties": {
+        "@timestamp": { "type": "date" },
+        "host": { "type": "keyword" },
+        "event_type": { "type": "keyword" },
+        "source_ip": { "type": "ip" },
+        "destination_ip": { "type": "ip" },
+        "message": { "type": "text" },
+        "severity": { "type": "keyword" }
+      }
+    }
+  }
+}
