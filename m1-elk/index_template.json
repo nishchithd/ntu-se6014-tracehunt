@@ -1,24 +1,47 @@
 {
-  "index_patterns": ["tracehunt-*", "windows-security-*", "sysmon-*", "zeek-*"],
+  "index_patterns": [
+    "tracehunt-raw-*",
+    "windows-security",
+    "sysmon",
+    "zeek"
+  ],
   "template": {
     "settings": {
       "number_of_shards": 1,
-      "number_of_replicas": 0
+      "number_of_replicas": 0,
+      "index.mapping.ignore_malformed": true
     },
     "mappings": {
+      "dynamic": "true",
       "properties": {
         "@timestamp": { "type": "date" },
         "host": {
           "properties": {
-            "name": { "type": "keyword" }
+            "name": { "type": "keyword" },
+            "hostname": { "type": "keyword" }
           }
         },
-        "event_type": { "type": "keyword" },
-        "source_ip": { "type": "ip" },
-        "destination_ip": { "type": "ip" },
-        "message": { "type": "text" },
-        "severity": { "type": "keyword" }
+        "event": {
+          "properties": {
+            "category": { "type": "keyword" },
+            "type": { "type": "keyword" },
+            "outcome": { "type": "keyword" }
+          }
+        },
+        "log": {
+          "properties": {
+            "syslog": {
+              "properties": {
+                "priority": { "type": "long" }
+              }
+            }
+          }
+        }
       }
     }
+  },
+  "priority": 200,
+  "_meta": {
+    "description": "TraceHunt index template for raw ingestion and normalized ECS security indices"
   }
 }
