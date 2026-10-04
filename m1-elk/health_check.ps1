@@ -1,8 +1,7 @@
+@'
 # TraceHunt ELK Health Check Script
-# Enforces strict non-zero exit code on failure, zero on complete success.
 $ErrorActionPreference = "Stop"
 
-# Configuration
 $EsUrl =$env:ES_URL
 if (-not $EsUrl) {$EsUrl = "http://127.0.0.1:9200" }
 
@@ -18,7 +17,6 @@ if (-not $ElasticPassword) {
     exit 1
 }
 
-# Setup Basic Authentication Header
 $AuthPair = "elastic:${ElasticPassword}"
 $EncodedAuth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($AuthPair))
 $AuthHeader = @{ Authorization = "Basic $EncodedAuth" }
@@ -43,7 +41,6 @@ $runId = [Guid]::NewGuid().ToString()
 $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
 $todayIndex = "tracehunt-raw-" + (Get-Date).ToUniversalTime().ToString("yyyy.MM.dd")
 
-# Construct event object and serialize cleanly via ConvertTo-Json
 $eventObject = [PSCustomObject]@{
     "@timestamp" = $timestamp
     "run_id"     = $runId
@@ -57,7 +54,6 @@ $eventObject = [PSCustomObject]@{
 }
 $jsonPayload = $eventObject | ConvertTo-Json -Compress
 
-# Ingest event over TCP socket with separate StreamWriter lines
 try {
     Write-Host "Connecting to Logstash at ${LogstashHost}:${LogstashPort}..."
     $tcp = New-Object System.Net.Sockets.TcpClient
@@ -77,7 +73,6 @@ try {
 }
 
 Write-Host "`n--- 3. Bounded Polling for Ingested Event in Elasticsearch ---"
-# Query payload targeting run_id via match query to avoid mapping issues
 $queryObject = [PSCustomObject]@{
     query = [PSCustomObject]@{
         match = [PSCustomObject]@{
@@ -91,7 +86,6 @@ $maxAttempts = 15$pollIntervalSec = 1
 $found =$false
 
 for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
-    Write-Host "Polling attempt $attempt/$maxAttempts for run_id ($runId)..."
     Start-Sleep -Seconds $pollIntervalSec
     try {
         $searchResponse = Invoke-RestMethod -Uri "$EsUrl/$todayIndex/_search" `
@@ -107,8 +101,8 @@ for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
             break
         }
     } catch {
-        # Logstash might still be processing; retry until maxAttempts
     }
+    Write-Host "Polling attempt $attempt/$maxAttempts for run_id ($runId)..."
 }
 
 if (-not $found) {
@@ -118,6 +112,4 @@ if (-not $found) {
 
 Write-Host "`n[SUCCESS] All ELK health checks passed!"
 exit 0
-
-Write-Host "`n[SUCCESS] All ELK health checks passed!"
-exit 0
+'@ | Set-Content .\health_check.ps1
