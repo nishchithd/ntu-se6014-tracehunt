@@ -15,26 +15,103 @@
       "dynamic": "true",
       "properties": {
         "@timestamp": { "type": "date" },
+        "run_id": { "type": "keyword" },
         "host": {
           "properties": {
             "name": { "type": "keyword" },
-            "hostname": { "type": "keyword" }
+            "hostname": { "type": "keyword" },
+            "ip": { "type": "ip" },
+            "id": { "type": "keyword" },
+            "architecture": { "type": "keyword" },
+            "os": {
+              "properties": {
+                "name": { "type": "keyword" },
+                "version": { "type": "keyword" },
+                "family": { "type": "keyword" },
+                "platform": { "type": "keyword" }
+              }
+            }
+          }
+        },
+        "user": {
+          "properties": {
+            "name": { "type": "keyword" },
+            "domain": { "type": "keyword" },
+            "id": { "type": "keyword" }
           }
         },
         "event": {
           "properties": {
+            "code": { "type": "keyword" },
+            "kind": { "type": "keyword" },
             "category": { "type": "keyword" },
             "type": { "type": "keyword" },
-            "outcome": { "type": "keyword" }
+            "outcome": { "type": "keyword" },
+            "action": { "type": "keyword" },
+            "dataset": { "type": "keyword" },
+            "module": { "type": "keyword" },
+            "provider": { "type": "keyword" }
+          }
+        },
+        "source": {
+          "properties": {
+            "ip": { "type": "ip" },
+            "port": { "type": "long" },
+            "domain": { "type": "keyword" },
+            "bytes": { "type": "long" },
+            "packets": { "type": "long" }
+          }
+        },
+        "destination": {
+          "properties": {
+            "ip": { "type": "ip" },
+            "port": { "type": "long" },
+            "domain": { "type": "keyword" },
+            "bytes": { "type": "long" },
+            "packets": { "type": "long" }
+          }
+        },
+        "process": {
+          "properties": {
+            "pid": { "type": "long" },
+            "name": { "type": "keyword" },
+            "executable": { "type": "keyword" },
+            "command_line": { "type": "wildcard" },
+            "working_directory": { "type": "keyword" },
+            "parent": {
+              "properties": {
+                "pid": { "type": "long" },
+                "name": { "type": "keyword" },
+                "executable": { "type": "keyword" },
+                "command_line": { "type": "wildcard" }
+              }
+            }
+          }
+        },
+        "network": {
+          "properties": {
+            "transport": { "type": "keyword" },
+            "protocol": { "type": "keyword" },
+            "community_id": { "type": "keyword" },
+            "bytes": { "type": "long" },
+            "packets": { "type": "long" }
           }
         },
         "log": {
           "properties": {
+            "level": { "type": "keyword" },
+            "logger": { "type": "keyword" },
             "syslog": {
               "properties": {
                 "priority": { "type": "long" }
               }
             }
+          }
+        },
+        "error": {
+          "properties": {
+            "message": { "type": "text" },
+            "code": { "type": "keyword" }
           }
         }
       }
@@ -42,6 +119,6 @@
   },
   "priority": 200,
   "_meta": {
-    "description": "TraceHunt index template for raw ingestion and normalized ECS security indices"
+    "description": "TraceHunt index template covering normalized ECS fields and raw health checks"
   }
 }
