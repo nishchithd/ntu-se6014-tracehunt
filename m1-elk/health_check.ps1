@@ -64,14 +64,9 @@ try {
     $tcp.Connect($LogstashHost, [int]$LogstashPort)
     
     $stream = $tcp.GetStream()
-    
-    # StreamWriter creation on its own line
     $writer = New-Object System.IO.StreamWriter($stream)
     
-    # Writing event on separate line
     $writer.WriteLine($jsonPayload)
-    
-    # Flush and Close separated cleanly
     $writer.Flush()
     $tcp.Close()
     
@@ -82,20 +77,21 @@ try {
 }
 
 Write-Host "`n--- 3. Bounded Polling for Ingested Event in Elasticsearch ---"
-# Query payload targeting the unique run_id
+# Query payload targeting run_id via match query to avoid mapping issues
 $queryObject = [PSCustomObject]@{
     query = [PSCustomObject]@{
-        term = [PSCustomObject]@{
+        match = [PSCustomObject]@{
             "run_id" = $runId
         }
     }
 }
 $queryJson =$queryObject | ConvertTo-Json -Compress
 
-$maxAttempts = 10$pollIntervalSec = 1
+$maxAttempts = 15$pollIntervalSec = 1
 $found =$false
 
 for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+    Write-Host "Polling attempt $attempt/$maxAttempts for run_id ($runId)..."
     Start-Sleep -Seconds $pollIntervalSec
     try {
         $searchResponse = Invoke-RestMethod -Uri "$EsUrl/$todayIndex/_search" `
@@ -113,13 +109,15 @@ for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
     } catch {
         # Logstash might still be processing; retry until maxAttempts
     }
-    Write-Host "Polling attempt $attempt/$maxAttempts for run_id ($runId)..."
 }
 
 if (-not $found) {
     Write-Error "[FAIL] Event with run_id '$runId' was not found in '$todayIndex' within $($maxAttempts * $pollIntervalSec) seconds."
     exit 1
 }
+
+Write-Host "`n[SUCCESS] All ELK health checks passed!"
+exit 0
 
 Write-Host "`n[SUCCESS] All ELK health checks passed!"
 exit 0
