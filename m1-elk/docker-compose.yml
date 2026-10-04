@@ -2,40 +2,51 @@ version: '3.8'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
     container_name: tracehunt-elasticsearch
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=true
       - xpack.security.enrollment.enabled=false
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-changeme}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:?ELASTIC_PASSWORD environment variable required}
     ports:
-      - "9200:9200"
+      - "127.0.0.1:9200:9200"
     volumes:
-      - esdata:/usr/share/elasticsearch/data
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -u elastic:${ELASTIC_PASSWORD} http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   logstash:
-    image: docker.elastic.co/logstash/logstash:8.11.0
+    image: docker.elastic.co/logstash/logstash:8.12.0
     container_name: tracehunt-logstash
     ports:
-      - "5000:5000"
-      - "5044:5044"
+      - "127.0.0.1:5000:5000"
+      - "127.0.0.1:5044:5044"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - LOGSTASH_WRITER_USER=${LOGSTASH_WRITER_USER:-logstash_writer}
+      - LOGSTASH_WRITER_PASSWORD=${LOGSTASH_WRITER_PASSWORD:?LOGSTASH_WRITER_PASSWORD environment variable required}
     volumes:
-      - ./pipeline:/usr/share/logstash/pipeline
+      - ./pipeline:/usr/share/logstash/pipeline:ro
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.11.0
+    image: docker.elastic.co/kibana/kibana:8.12.0
     container_name: tracehunt-kibana
     ports:
-      - "5601:5601"
+      - "127.0.0.1:5601:5601"
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=kibana_system
-      - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD:-changeme}
+      - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD:?KIBANA_SYSTEM_PASSWORD environment variable required}
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
 
 volumes:
-  esdata:
+  es_data:
